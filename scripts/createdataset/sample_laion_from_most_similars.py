@@ -105,6 +105,7 @@ if __name__ == '__main__':
     # Choose indices
     all_laionindices = set()
     key2laionindices_sampled = {}
+    indice2keys = {}
     for key, laionindices in tqdm(key2laionindices.items()):
         sims = np.array(df.loc[laionindices, params['similarity_col']].tolist())
 
@@ -114,10 +115,17 @@ if __name__ == '__main__':
 
         all_laionindices.update(laionindices_sampled)
 
+        # update inverse indices
+        for indice in laionindices:
+            indice2keys[indice] = key
+
     all_laionindices = sorted(all_laionindices)
+    all_keys = [indice2keys[indice] for indice in all_laionindices]
 
     # Subset
     df = df.loc[all_laionindices]
+
+    df.loc[:, 'wnid'] = all_keys
 
     print_verbose(f'\tsampled data has {len(df)} rows.')
 
@@ -134,11 +142,12 @@ if __name__ == '__main__':
     else:
         labels_file_name = params['labels_save_file_name']
 
+    labels_file_name = labels_file_name.replace('.pkl', f'_smthresh{params["similarity_th"]}.pkl')
     with open(os.path.join(params['labels_path'], labels_file_name), open_type) as f:
         pickle.dump(key2laionindices_sampled, f)
 
     # Save df
-    sampled_subset_file_name = prefix + laionu.get_laion_subset_file_name(0, params['laion_until_part'])
+    sampled_subset_file_name = prefix + 'thresh{}_total{}_'.format(params['similarity_th'], len(df)) + laionu.get_laion_subset_file_name(0, params['laion_until_part'])
     sampled_subset_file_path = os.path.join(params['laion_path'], sampled_subset_file_name)
 
     if params['safe'] and os.path.exists(sampled_subset_file_path):
