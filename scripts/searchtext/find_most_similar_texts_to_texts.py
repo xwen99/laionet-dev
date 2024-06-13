@@ -35,6 +35,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--save_path', type=str, default=os.path.join('laion400m', 'processed', 'ilsvrc_labels'))
 
+    parser.add_argument('--topk', type=int, default=50)
+
     # Compute
     parser.add_argument('--no_gpu', action='store_true')
     parser.add_argument('--gpu_id', type=int, default=0)
@@ -111,8 +113,8 @@ if __name__ == '__main__':
         embeds_batch_norm = normalize(embeds_batch, norm='l2', axis=1)
 
         # Search the index
-        laion_indices_batch, sims_batch = faiss_index.search(embeds_batch_norm, k=1)
-        laion_indices_batch, sims_batch = laion_indices_batch[:, 0], sims_batch[:, 0]
+        laion_indices_batch, sims_batch = faiss_index.search(embeds_batch_norm, k=params['topk'])
+        # laion_indices_batch, sims_batch = laion_indices_batch[:, 0], sims_batch[:, 0]
 
         # Update
         for i_idx, index in enumerate(indices_batch):
@@ -120,9 +122,10 @@ if __name__ == '__main__':
             sim = sims_batch[i_idx]
 
             # For compatibility with subset_laion, use array
-            index2laionindices[index] = [laion_idx]
-            index2sims[index] = [sim]
-
+            # index2laionindices[index] = [laion_idx]
+            # index2sims[index] = [sim]
+            index2laionindices[index] = laion_idx
+            index2sims[index] = sim
         # Step
         indices_batch = []
         texts_batch = []
@@ -130,11 +133,11 @@ if __name__ == '__main__':
     # ----- Save -----
     print_verbose('saving ...')
 
-    file_name = 'icimagename2laionindices.pkl'
+    file_name = 'icimagename2laionindices_top{}.pkl'.format(params['topk'])
     with open(os.path.join(params['save_path'], file_name), open_type) as f:
         pickle.dump(index2laionindices, f)
 
-    sim_file_name = 'icimagename2sims.pkl'
+    sim_file_name = 'icimagename2sims_top{}.pkl'.format(params['topk'])
     with open(os.path.join(params['save_path'], sim_file_name), open_type) as f:
         pickle.dump(index2sims, f)
 

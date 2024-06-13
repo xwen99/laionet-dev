@@ -1,5 +1,6 @@
 import sys
 import os
+import re
 import argparse
 import pickle
 import glob
@@ -106,7 +107,14 @@ if __name__ == '__main__':
 
     print_verbose(f'\tfinal dataframe has {len(df)} rows.')
 
-    prefix = configs.LAIONConfig.method_to_prefix(params['method'])
+    if 'thresh' in params['labels_filter']:
+        filter_str = '_' + re.search('thresh\d+\.\d+', params['labels_filter']).group(0)
+    elif 'top' in params['labels_filter']:
+        filter_str = '_' + re.search('top\d+', params['labels_filter']).group(0)
+    else:
+        filter_str = ''
+
+    prefix = configs.LAIONConfig.method_to_prefix(params['method']) + filter_str + '_total{}'.format(len(df))
 
     subset_file_name = prefix + laionu.get_laion_subset_file_name(0, latest_part)
     subset_file_path = os.path.join(params['laion_path'], subset_file_name)
